@@ -6,6 +6,7 @@ import producer.model.Transaccion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+
 public class TransactionPublisher {
 
 	private Channel channel;
@@ -17,11 +18,21 @@ public class TransactionPublisher {
 	}
 	
 	public void publicar(Transaccion transaccion) throws Exception{
-		String bancoDestino = transaccion.getBancoDestino();
-		channel.queueDeclare(bancoDestino, true, false,false, null);
-		byte[] payload = mapper.writeValueAsBytes(transaccion);
-		channel.basicPublish("", bancoDestino, MessageProperties.PERSISTENT_TEXT_PLAIN, payload);
+		String colaName; 
+		String status;
+		if (transaccion.getMonto() > 4000) {
+			colaName = "cola_rechazados";
+			status = "Rechazada";
+		}else {
+			colaName = transaccion.getBancoDestino();
+			status = "Aceptada";
+		}
 		
-		System.out.println("Transaccion publicada=" + transaccion.getIdTransaccion() + " se encuentra en cola= " + bancoDestino);
+		
+		channel.queueDeclare(colaName, true, false,false, null);
+		byte[] payload = mapper.writeValueAsBytes(transaccion);
+		channel.basicPublish("", colaName, MessageProperties.PERSISTENT_TEXT_PLAIN, payload);
+		
+		System.out.println("Transaccion: " + transaccion.getIdTransaccion() + " Monto: " + transaccion.getMonto() + " Cola: " + colaName + " Status: " + status);
 	}
 }

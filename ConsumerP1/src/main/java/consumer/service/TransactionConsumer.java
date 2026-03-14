@@ -1,6 +1,7 @@
 package consumer.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.rabbitmq.client.*;
 import consumer.model.Transaccion;
 
@@ -8,7 +9,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-
 public class TransactionConsumer {
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -21,15 +21,30 @@ public class TransactionConsumer {
 
     public void startConsuming(Channel channel) throws Exception {
 
-        String[] colas = {"BANRURAL", "GYT", "BAC", "BI"};
-
+        String[] colas = {"BANRURAL", "GYT", "BAC", "BI", "cola_rechazados"};
+       
+        
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-            String json = new String(delivery.getBody());
+        	
+            Transaccion transaccion = new Transaccion();
+            double monto = transaccion.getMonto();
+        	String json = new String(delivery.getBody());
             try {
                 Transaccion t = mapper.readValue(json, Transaccion.class);
                 t.setNombre("Gerson Leonel Jimenez Gonzalez");
                 t.setCarnet("0905-24-7000");
-                enviarPost(t);
+
+                
+                for (String cola:colas) {
+                	String nombre = cola;
+                
+                if(cola != "cola_rechazados") {
+                	enviarPost(t);
+                }else {
+                	System.out.println("Transaccion rechazada debido a monto: " + monto);
+                	
+                }
+                }
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (Exception e) {
                 System.err.println("Error procesando mensaje: " + e.getMessage());
@@ -55,7 +70,9 @@ public class TransactionConsumer {
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
+    
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        
         System.out.println("Respuesta POST: " + response.statusCode() + " - " + response.body());
     }
 }
