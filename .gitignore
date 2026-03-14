@@ -1,0 +1,11 @@
+* 
+!.gitignore 
+!ProducerP1/ 
+!ProducerP1/** 
+!ConsumerP1/ 
+!ConsumerP1/** 
+ProducerP1/target/ 
+ConsumerP1/target/ 
+**/.classpath 
+**/.project 
+**/.settings/ 
